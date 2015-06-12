@@ -48,13 +48,15 @@ class BoW_sp():
     def segment(self, data, w_len=20, interval=1):
 
         segment_list = list()
-        
+        #print range(len(data))
         # Slice data segment to temp
         for i in range(len(data)):
             stamp_index, len_index = self.get_index(len(data[i]), w_len, interval)
             temp = numpy.zeros([w_len,  len_index])
             for count, j in enumerate(stamp_index):
                 temp[:, count] = data[i][j:j+w_len]
+
+            #print numpy.shape(temp)
             segment_list.append(temp)
             
         return segment_list
@@ -82,7 +84,7 @@ class BoW_sp():
         # BoW for data
         for index, item in enumerate(segment_list):
             code = spams.lasso(numpy.asfortranarray(item), D, lambda1=a, pos=True)
-            code = numpy.sum(code.todense(), axis=1)
+            code = numpy.sum(code.todense(), axis=1)    #sum pooling
             bow_data[index:index+1, :] += code.reshape([1, k])
             div = numpy.linalg.norm(bow_data[index, :])
             if div > 0:
