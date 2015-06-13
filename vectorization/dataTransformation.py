@@ -98,3 +98,23 @@ def trip_diff(trip):     # input each trip as a float ndarray(numpy)
     
     return speed            
 
+def trip2angle(trip):
+    import numpy
+    x_dist = numpy.diff(trip[:,0])**2
+    y_dist = numpy.diff(trip[:,1])**2
+    angle = [math.degrees(d) for d in numpy.arctan(y_dist/x_dist)]
+
+    return angle
+
+
+
+def equalSeg(trip,segNum=10):
+    import numpy
+    temp = numpy.split(trip,segNum)
+
+def featEx(series):     #(a list) of numpy array, extract features and concanate them 
+
+    for i in len(series):
+
+
+
