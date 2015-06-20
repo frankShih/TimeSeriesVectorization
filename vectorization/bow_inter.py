@@ -4,7 +4,7 @@ import random
 import math
 import numpy
 import spams
-from learning import inter_kernel
+#from learning import inter_kernel
 
 # Slice trajectory with fixed window size
 def slice(trajectory, w_len, interval=1):
@@ -49,6 +49,7 @@ w_len = 40
 k = 500
 a = 1.0/math.sqrt(w_len)
 
+'''
 file = "submission_bow_inter.csv"
 
 if __name__ == '__main__':
@@ -90,3 +91,4 @@ if __name__ == '__main__':
         for j in range(1, 201):
             f.write(driver+'_'+str(j)+','+str(K[j-1, 0])+'\n')
         f.close()
+'''

@@ -52,13 +52,20 @@ class BoW_sp():
         # Slice data segment to temp
         for i in range(len(data)):
             stamp_index, len_index = self.get_index(len(data[i]), w_len, interval)
+            #print [len(stamp_index), len_index]
             temp = numpy.zeros([w_len,  len_index])
             for count, j in enumerate(stamp_index):
                 temp[:, count] = data[i][j:j+w_len]
 
-            #print numpy.shape(temp)
-            segment_list.append(temp)
             
+            segment_list.append(temp)
+        print (numpy.hstack(segment_list)).shape
+        print '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+        '''
+        temp = numpy.asarray(segment_list[0])
+        for i in range(1,len(segment_list)):
+            temp = numpy.
+        '''
         return segment_list
 
     @classmethod
@@ -77,7 +84,7 @@ class BoW_sp():
         return D
 
     @classmethod
-    def coding_series(self, segment_list, D, a=None, batch=False, iter=-5):
+    def coding_series(self, segment_list, D, a=None, batch=False):
         k = D.shape[1]
         bow_data = numpy.zeros([len(segment_list), k])
 

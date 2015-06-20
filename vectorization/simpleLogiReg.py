@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy, os, random
-import training
+import training, dataTransformation
 def speedDistribution(trip): #input as numpy aray
   import numpy
   # transform to velocity
@@ -14,8 +14,8 @@ def speedDistribution(trip): #input as numpy aray
   return numpy.percentile(velocity, range(5,101,5))
 
 
-path = '/media/shih/新增磁碟區/ZiWen_packup/drivers/drivers'
-file = "submission_logi_20quntile.csv"
+path = '/home/dmlab/shih/drivers'
+file = "submission_logi_newFeature.csv"
 f = open(file, "w")
 f.write("driver_trip,prob\n")
 f.close()
@@ -26,6 +26,20 @@ drivers = os.listdir(path)
 for driver in drivers:
   refData = []  
   currentData = []
+  
+  #------- train every driver -------
+  target = 1
+  print '==================driver - '+str(driver)+'===================='
+  for i in range(200):
+    print 'trip - '+str(i+1)
+    trip = numpy.genfromtxt(os.path.join(path, str(driver), str(i+1)+ ".csv"), 
+                            delimiter=',', skip_header=True)          
+    
+    currentData.append(dataTransformation.featEx(trip))
+    #print dataTransformation.featEx(trip)
+    #raw_input("Press Enter to continue...")
+  currentData = numpy.asarray(currentData)
+  
   #-------- random select 5 other drivers --------
   '''
   target = 0
@@ -52,23 +66,15 @@ for driver in drivers:
     # Load 200 trajectory for random drivers    
     j = random.randint(1,200)
     #print os.path.join(path, str(rd), str(j)+'.csv')
+    print 'random driver-  '+str(rd)+' ; '+'trip - '+str(j)
     trip = numpy.genfromtxt(os.path.join(path, str(rd), str(j)+'.csv'), 
                             delimiter=',', skip_header=True)
-    refData.append(speedDistribution(trip))
+    refData.append(dataTransformation.featEx(trip))
+    #print  dataTransformation.featEx(trip,segNum=1)
     
   refData = numpy.asarray(refData)
 
-  #------- train every driver -------
-  target = 1
-  print(driver)  
-  for i in range(200):
-    trip = numpy.genfromtxt(os.path.join(path, str(driver), str(i+1)+ ".csv"), 
-                            delimiter=',', skip_header=True)          
-    #features = numpy.insert(speedDistribution(trip), 0, target) # add label
-    currentData.append(speedDistribution(trip))
-  
-  currentData = numpy.asarray(currentData)
-  
+
   # ------------tuning & prediction ------------
   print [currentData.shape, refData.shape]
   prediction = training.logiReg_tune(currentData, refData)

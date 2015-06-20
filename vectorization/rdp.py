@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 The Ramer-Douglas-Peucker algorithm roughly ported from the pseudo-code provided
 by http://en.wikipedia.org/wiki/Ramer-Douglas-Peucker_algorithm
@@ -40,7 +42,7 @@ def rdp(points, epsilon):
 	
 	
 	
-	
+
 if __name__ == "__main__":	
 	import matplotlib.pyplot as plt
 	import numpy as np
@@ -68,7 +70,7 @@ if __name__ == "__main__":
 
 	tolerance = 70
 	min_angle = np.pi*0.22
-	filename = os.path.expanduser('~/tmp/bla.data')
+	filename = os.path.expanduser('/media/shih/新增磁碟區/ZiWen_packup/drivers/drivers/1/1.csv')
 	points = np.genfromtxt(filename).T
 	print(len(points))
 	x, y = points.T
@@ -97,5 +99,5 @@ if __name__ == "__main__":
 	ax.invert_yaxis()
 	plt.legend(loc='best')
 	plt.show()
-	
+
 	

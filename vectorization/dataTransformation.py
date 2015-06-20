@@ -5,10 +5,17 @@ Created on Wed May 27 16:53:12 2015
 @author: shih
 """
 #import csv
-
+import numpy, math, time 
+import matplotlib.pyplot as plt
 
 #--------transform x-y series to series of x_speed, y_speed, speed---------
 
+def movingaverage(series, window_size):
+  
+    window = numpy.ones(int(window_size))/float(window_size)
+
+    return numpy.convolve(series, window, 'same')
+      
 
 def interpolate(speed, mode=0):  
     # input: a list of speed array
@@ -83,8 +90,7 @@ def interpolate(speed, mode=0):
                    
 
 def trip_diff(trip):     # input each trip as a float ndarray(numpy)
-    import numpy, time       
-    
+        
     trip = numpy.array(trip,dtype=float)
     speed = []
     '''
@@ -95,26 +101,140 @@ def trip_diff(trip):     # input each trip as a float ndarray(numpy)
         #time.sleep(1)
     '''
     speed = numpy.round(numpy.sqrt(numpy.diff(trip[:,0])**2 + numpy.diff(trip[:,1])**2),2)
-    
+    #speed = movingaverage(speed, 5)
+        
     return speed            
 
-def trip2angle(trip):
-    import numpy
-    x_dist = numpy.diff(trip[:,0])**2
-    y_dist = numpy.diff(trip[:,1])**2
-    angle = [math.degrees(d) for d in numpy.arctan(y_dist/x_dist)]
 
+def trip2angle(trip):
+    
+    x_v = numpy.diff(trip[:,0])
+    y_v = numpy.diff(trip[:,1])
+    angle = [math.degrees(numpy.arctan(y/max(x, 0.01))) for x, y in zip(x_v, y_v)]
+    #print angle
+    #raw_input('hahahahahahhaahahhahahaha')
+    # only handle rotation,  reflection will cause 'Complementary Remainder'
+    # not rotation and reflection in preprocessing yet, so not negative angle
     return angle
 
 
+def featEx(trip,segNum=1):     #numpy array, extract features and concanate them       
+    #------------- transform to different type of data source ----------------
+     
+    #check trip length for numpy.split
+    if (len(trip)%segNum)==0:
+        #print 111
+        segments = numpy.split(trip, segNum)
+    elif (len(trip)%segNum) <  0.5*len(trip)/segNum:
+        #print 222
+        length = len(trip)- (len(trip)%segNum)
+        sub_len = length/segNum
+        #print (trip[:length,:]).shape
+        segments = numpy.split(trip[:length :], segNum)
+    else:
+        #print 333
+        length = len(trip)- (len(trip)%segNum)
+        sub_len = length/segNum
+        #print (trip[:length,:]).shape
+        index =  range(0, len(trip), sub_len)
+        index.append(len(trip)-1)
+        segments = [trip[index[i]:index[i+1],:]  for i in range(len(index)-1)]
 
-def equalSeg(trip,segNum=10):
-    import numpy
-    temp = numpy.split(trip,segNum)
+    # extract features from each segment
+    jump = [0]
+    features = [trip.shape[0]]  #1
+    for j in range(segNum):
+        distMove = 0
+        dist2origin = [math.sqrt((trip[0,0])**2+(trip[0,1])**2)]
+        trip = segments[j]
+        for i in range(1,trip.shape[0]):
+            temp = math.sqrt((trip[i,0])**2+(trip[i,1])**2)
+            dist2origin.append(temp)
+            temp = math.sqrt((trip[i,0]-trip[i-1,0])**2+(trip[i,1]-trip[i-1,1])**2)
+            if temp > 50:
+                jump.append(temp)
 
-def featEx(series):     #(a list) of numpy array, extract features and concanate them 
+            distMove = distMove+temp
 
-    for i in len(series):
+        features.extend([max(jump)])    #1
+        dist2origin = numpy.asarray(dist2origin)
+        speed = trip_diff(trip)     #ndarray
 
+        accel = numpy.diff(speed)    #ndarray
+        jerk = numpy.diff(accel)     #ndarray
+        angle = trip2angle(trip)    #ndarray
+        # ------------------- feature extraction ----------------------
+        turnP1 = 0
+        turnP2 = 0
+        turnP3 = 0
+        turnN1 = 0
+        turnN2 = 0
+        turnN3 = 0
+        for i in range(3,len(angle)):
+            if angle[i] - angle[i-1] > 45:
+                turnP1 = turnP1 + 1
+            elif angle[i] - angle[i-1] < -45:
+                turnN1 = turnN1 + 1
+            elif angle[i] - angle[i-2] > 45:
+                turnP2 = turnP2 + 1
+            elif angle[i] - angle[i-2] < -45:
+                turnN2 = turnN2 + 1    
+            elif angle[i] - angle[i-3] > 45:
+                turnP3 = turnP3 + 1
+            elif angle[i] - angle[i-3] < -45:
+                turnN3 = turnN3 + 1
+            else:
+                continue
+
+        distanceO = [max(dist2origin), numpy.mean(dist2origin), numpy.std(dist2origin)]
+        pathEffi = math.sqrt((trip[0,0]-trip[trip.shape[0]-1,0])**2+
+                            (trip[0,1]-trip[trip.shape[0]-1,1])**2) / max(distMove, 0.01)
+        #angle_whole = math.degrees(numpy.arctan(abs(trip[0,1]-trip[trip.shape[0]-1,1])/max(abs(trip[0,0]-trip[trip.shape[0]-1,0]), 0.01) ))
+        angles = [numpy.mean(angle), numpy.std(angle), sum(angle), turnP1, turnP2, turnP3, turnN1, turnN2, turnN3]
+        #, turnP1, turnP2, turnP3, turnN1, turnN2, turnN3
+        #turnEffi = angle_whole/max(sum(angle), 0.01)
+        speed_s = [numpy.mean(speed), numpy.std(speed)]
+        accel_s = [numpy.std(accel)]
+        jerk_s  = [numpy.std(jerk)]
+        features.extend([distMove, pathEffi])    #2
+        features.extend(distanceO)      #3
+        features.extend(angles)         #9
+        features.extend(speed_s)        #2
+        features.extend(accel_s)        #1
+        features.extend(jerk_s)         #1
+
+    features =  [round(features[x],2) for x in range(len(features))]
+    return features
+
+
+def quanFeat(trip):
+    start = 0
+    end = 0
+    speed = movingaverage(trip_diff(trip),5)
+    for i in range(trip.shape[0]-2):
+        if speed[i] > 0.1:
+            start = i
+            break
+    for i in range(trip.shape[0]-2,0,-1):
+        if speed[i] > 0.1:
+            end = i
+            break
+    #print [start, end]
+    accel = movingaverage(numpy.diff(speed),5)   
+    jerk = movingaverage(numpy.diff(accel),5)
+    angle = movingaverage(trip2angle(trip),5)
+    a_angle = movingaverage(numpy.diff(angle),5) 
+
+    speed = numpy.percentile(speed, range(5,101,5))
+    accel = numpy.percentile(accel, range(5,101,5))
+    jerk = numpy.percentile(jerk, range(5,101,5))
+    angle = numpy.percentile(angle, range(5,101,5))
+    a_angle = numpy.percentile(a_angle, range(5,101,5))
+
+    features = numpy.hstack((speed, accel, jerk, angle, a_angle))
+
+    return features
+
+#if __name__ == '__main__':
 
 
